@@ -432,6 +432,21 @@ def test_reverse_mount_urls() -> None:
         mounted.url_path_for("users")
 
 
+def test_reverse_mount_urls_with_child_path_parameter() -> None:
+    child_routes = [Route("/{path:path}", ok, name="file")]
+    mounted = Router([Mount("/static", routes=child_routes, name="static")])
+    assert mounted.url_path_for("static:file", path="/foo/bar") == "/static/foo/bar"
+    assert mounted.url_path_for("static:file", path="foo/bar") == "/static/foo/bar"
+
+    nested = Router([Mount("/app", routes=[Mount("/static", routes=child_routes, name="static")], name="app")])
+    assert nested.url_path_for("app:static:file", path="/foo/bar") == "/app/static/foo/bar"
+    assert nested.url_path_for("app:static:file", path="foo/bar") == "/app/static/foo/bar"
+
+    unnamed = Router([Mount("/static", routes=child_routes)])
+    assert unnamed.url_path_for("file", path="/foo/bar") == "/static/foo/bar"
+    assert unnamed.url_path_for("file", path="foo/bar") == "/static/foo/bar"
+
+
 def test_mount_at_root(test_client_factory: TestClientFactory) -> None:
     mounted = Router([Mount("/", ok, name="users")])
     client = test_client_factory(mounted)
